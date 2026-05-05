@@ -41,5 +41,41 @@ pub fn sys_get_time(ts: *mut TimeVal, _tz: usize) -> isize {
 // TODO: implement the syscall
 pub fn sys_trace(_trace_request: usize, _id: usize, _data: usize) -> isize {
     trace!("kernel: sys_trace");
-    -1
+
+    const TRACE_READ:     usize = 0; 
+    const TRACE_WRITE:    usize = 1; 
+    const COUNT_SYSCALL:  usize = 2; 
+
+    match _trace_request {
+        // 读用户内存
+        TRACE_READ => {
+            let ptr = _id as *const u8;
+            if ptr.is_null() {
+                -1
+            } else {
+                unsafe { *ptr as isize }
+            }
+        }
+
+        // 写用户内存
+        TRACE_WRITE => {
+            let ptr = _id as *mut u8;
+            let value = _data as u8;
+            if ptr.is_null() {
+                -1
+            } else {
+                unsafe {
+                    *ptr = value;
+                    0
+                }
+            }
+        }
+
+        // 获取系统调用计数
+        COUNT_SYSCALL => {
+            crate::task::TASK_MANAGER.get_syscall_count(_id) as isize
+        }
+
+        _ => -1,
+    }
 }
